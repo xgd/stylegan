@@ -481,6 +481,41 @@ def create_lsun_wide(tfrecord_dir, lmdb_dir, width=512, height=384, max_images=N
 
 #----------------------------------------------------------------------------
 
+def create_lsun_wide2(tfrecord_dir, img_dir, width=512, height=384, max_images=None):
+    assert width == 2 ** int(np.round(np.log2(width)))
+    assert height <= width
+    print('Loading LSUN dataset from "%s"' % img_dir)
+    import io
+    import glob
+
+    fs = glob.glob(os.path.join(img_dir, '*.jpg'))
+    total_images = len(fs)
+    if max_images is None:
+        max_images = total_images
+
+    with TFRecordExporter(tfrecord_dir, max_images, print_progress=False) as tfr:
+        for idx, p in enumerate(fs):
+            img = np.asarray(PIL.Image.open(p))
+            ch = int(np.round(width * img.shape[0] / img.shape[1]))
+            if img.shape[1] < width or ch < height:
+                continue
+            img = img[(img.shape[0] - ch) // 2 : (img.shape[0] + ch) // 2]
+            img = PIL.Image.fromarray(img, 'RGB')
+            img = img.resize((width, height), PIL.Image.ANTIALIAS)
+            img = np.asarray(img)
+            img = img.transpose([2, 0, 1]) # HWC => CHW
+
+            canvas = np.zeros([3, width, width], dtype=np.uint8)
+            canvas[:, (width - height) // 2 : (width + height) // 2] = img
+            tfr.add_image(canvas)
+            print('\r%d / %d => %d ' % (idx + 1, total_images, tfr.cur_images), end='')
+
+            if tfr.cur_images == max_images:
+                break
+    print()
+
+#----------------------------------------------------------------------------
+
 def create_celeba(tfrecord_dir, celeba_dir, cx=89, cy=121):
     print('Loading CelebA from "%s"' % celeba_dir)
     glob_pattern = os.path.join(celeba_dir, 'img_align_celeba_png', '*.png')
