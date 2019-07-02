@@ -648,6 +648,14 @@ def execute_cmdline(argv):
     p.add_argument(     '--height',         help='Output height (default: 384)', type=int, default=384)
     p.add_argument(     '--max_images',     help='Maximum number of images (default: none)', type=int, default=None)
 
+    p = add_command(    'create_lsun_wide2', 'Create LSUN dataset with non-square aspect ratio.',
+                                            'create_lsun_wide datasets/lsun-car-512x384 ~/downloads/lsun/car_lmdb --width 512 --height 384')
+    p.add_argument(     'tfrecord_dir',     help='New dataset directory to be created')
+    p.add_argument(     'img_dir',         help='Directory containing images database')
+    p.add_argument(     '--width',          help='Output width (default: 512)', type=int, default=512)
+    p.add_argument(     '--height',         help='Output height (default: 384)', type=int, default=384)
+    p.add_argument(     '--max_images',     help='Maximum number of images (default: none)', type=int, default=None)
+
     p = add_command(    'create_celeba',    'Create dataset for CelebA.',
                                             'create_celeba datasets/celeba ~/downloads/celeba')
     p.add_argument(     'tfrecord_dir',     help='New dataset directory to be created')
