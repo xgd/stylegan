@@ -498,8 +498,8 @@ def create_lsun_wide2(tfrecord_dir, img_dir, width=512, height=384, max_images=N
             try:
                 img = np.asarray(PIL.Image.open(p))
                 ch = int(np.round(width * img.shape[0] / img.shape[1]))
-                if img.shape[1] < width or ch < height:
-                    continue
+                #if img.shape[1] < width or ch < height:
+                #    continue
                 img = img[(img.shape[0] - ch) // 2 : (img.shape[0] + ch) // 2]
                 img = PIL.Image.fromarray(img, 'RGB')
                 img = img.resize((width, height), PIL.Image.ANTIALIAS)
