@@ -495,21 +495,23 @@ def create_lsun_wide2(tfrecord_dir, img_dir, width=512, height=384, max_images=N
 
     with TFRecordExporter(tfrecord_dir, max_images, print_progress=False) as tfr:
         for idx, p in enumerate(fs):
-            img = np.asarray(PIL.Image.open(p))
-            ch = int(np.round(width * img.shape[0] / img.shape[1]))
-            if img.shape[1] < width or ch < height:
-                continue
-            img = img[(img.shape[0] - ch) // 2 : (img.shape[0] + ch) // 2]
-            img = PIL.Image.fromarray(img, 'RGB')
-            img = img.resize((width, height), PIL.Image.ANTIALIAS)
-            img = np.asarray(img)
-            img = img.transpose([2, 0, 1]) # HWC => CHW
+            try:
+                img = np.asarray(PIL.Image.open(p))
+                ch = int(np.round(width * img.shape[0] / img.shape[1]))
+                if img.shape[1] < width or ch < height:
+                    continue
+                img = img[(img.shape[0] - ch) // 2 : (img.shape[0] + ch) // 2]
+                img = PIL.Image.fromarray(img, 'RGB')
+                img = img.resize((width, height), PIL.Image.ANTIALIAS)
+                img = np.asarray(img)
+                img = img.transpose([2, 0, 1]) # HWC => CHW
 
-            canvas = np.zeros([3, width, width], dtype=np.uint8)
-            canvas[:, (width - height) // 2 : (width + height) // 2] = img
-            tfr.add_image(canvas)
-            print('\r%d / %d => %d ' % (idx + 1, total_images, tfr.cur_images), end='')
-
+                canvas = np.zeros([3, width, width], dtype=np.uint8)
+                canvas[:, (width - height) // 2 : (width + height) // 2] = img
+                tfr.add_image(canvas)
+                print('\r%d / %d => %d ' % (idx + 1, total_images, tfr.cur_images), end='')
+            except:
+                print(sys.exc_info()[1])
             if tfr.cur_images == max_images:
                 break
     print()
