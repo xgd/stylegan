@@ -20,6 +20,14 @@ from training import dataset
 from training import misc
 from metrics import metric_base
 
+import queue
+
+def truncate_save_pkl(queue, pkl, max_qsize=5):
+    while queue.qsize() >= max_qsize:
+        old_pkl = queue.get()
+        os.remove(old_pkl)
+    queue.put(pkl)
+
 #----------------------------------------------------------------------------
 # Just-in-time processing of training images before feeding them to the networks.
 
@@ -213,6 +221,7 @@ def training_loop(
     cur_tick = 0
     tick_start_nimg = cur_nimg
     prev_lod = -1.0
+    pkl_queue = queue.Queue()
     while cur_nimg < total_kimg * 1000:
         if ctx.should_stop(): break
 
@@ -260,6 +269,7 @@ def training_loop(
                 misc.save_image_grid(grid_fakes, os.path.join(submit_config.run_dir, 'fakes%06d.png' % (cur_nimg // 1000)), drange=drange_net, grid_size=grid_size)
             if cur_tick % network_snapshot_ticks == 0 or done or cur_tick == 1:
                 pkl = os.path.join(submit_config.run_dir, 'network-snapshot-%06d.pkl' % (cur_nimg // 1000))
+                truncate_save_pkl(pkl_queue, pkl)
                 misc.save_pkl((G, D, Gs), pkl)
                 metrics.run(pkl, run_dir=submit_config.run_dir, num_gpus=submit_config.num_gpus, tf_config=tf_config)
 
