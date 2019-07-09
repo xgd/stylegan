@@ -25,11 +25,11 @@ def _parse_tfrecord_tf(record, compressed):
         'data': tf.FixedLenFeature([], tf.string)})
     
     if compressed:
-        #data = tf.image.decode_jpeg(features['data'], channels=3)
-        with io.BytesIO(features['data']) as img_bs:
-            with Image.open(img_bs) as data:
-                data = np.asarray(data)
-                data = np.transpose(data, [2, 0, 1])
+        data = tf.image.decode_jpeg(features['data'], channels=3)
+        # with io.BytesIO(features['data']) as img_bs:
+        #     with Image.open(img_bs) as data:
+        #         data = np.asarray(data)
+        #         data = np.transpose(data, [2, 0, 1])
     else:
         data = tf.decode_raw(features['data'], tf.uint8)
 
