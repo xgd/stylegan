@@ -85,8 +85,8 @@ class TFRecordExporter:
                 img = (img[:, 0::2, 0::2] + img[:, 0::2, 1::2] + img[:, 1::2, 0::2] + img[:, 1::2, 1::2]) * 0.25
             quant = np.rint(img).clip(0, 255).astype(np.uint8)
             if self.compressed:
-                print(type(quant), quant.shape)
-                with PIL.Image.fromarray(np.uint8(np.transpose(quant, [2, 0, 1]))) as img, io.BytesIO() as img_bs:
+                #print(type(quant), quant.shape)
+                with PIL.Image.fromarray(np.uint8(np.transpose(quant, [1, 2, 0]))) as img, io.BytesIO() as img_bs:
                     img.save(img_bs, format='jpeg', quality=90)
                     ex_value = img_bs.get_value()
             else:
