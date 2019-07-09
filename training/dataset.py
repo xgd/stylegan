@@ -13,23 +13,48 @@ import numpy as np
 import tensorflow as tf
 import dnnlib
 import dnnlib.tflib as tflib
+import io
 
 #----------------------------------------------------------------------------
 # Parse individual image from a tfrecords file.
 
-def parse_tfrecord_tf(record):
+def _parse_tfrecord_tf(record, compressed):
     features = tf.parse_single_example(record, features={
         'shape': tf.FixedLenFeature([3], tf.int64),
         'data': tf.FixedLenFeature([], tf.string)})
-    data = tf.decode_raw(features['data'], tf.uint8)
+    
+    if compressed:
+        data = tf.image.decode_jpeg(features['data'], channels=3)
+        data = Image.open(io.BytesIO(data))
+        data = np.asarray(data)
+    else:
+        data = tf.decode_raw(features['data'], tf.uint8)
+
     return tf.reshape(data, features['shape'])
 
-def parse_tfrecord_np(record):
+def parse_tfrecord_tf(record):
+    return _parse_tfrecord_tf(record, False)
+
+def parse_compressed_tfrecord_tf(record):
+    return _parse_tfrecord_tf(record, True)
+
+def _parse_tfrecord_np(record, compressed):
     ex = tf.train.Example()
     ex.ParseFromString(record)
     shape = ex.features.feature['shape'].int64_list.value # temporary pylint workaround # pylint: disable=no-member
     data = ex.features.feature['data'].bytes_list.value[0] # temporary pylint workaround # pylint: disable=no-member
-    return np.fromstring(data, np.uint8).reshape(shape)
+    if compressed:
+        data = tf.image.decode_jpeg(data, channels=3)
+    else:
+        data = np.fromstring(data, np.uint8)
+
+    return data.reshape(shape)
+
+def parse_tfrecord_np(record):
+    return _parse_tfrecord_np(record, False)
+
+def parse_compressed_tfrecord_np(record):
+    return _parse_tfrecord_np(record, True)
 
 #----------------------------------------------------------------------------
 # Dataset class that loads data from tfrecords files.
@@ -44,7 +69,8 @@ class TFRecordDataset:
         shuffle_mb      = 4096,     # Shuffle data within specified window (megabytes), 0 = disable shuffling.
         prefetch_mb     = 2048,     # Amount of data to prefetch (megabytes), 0 = disable prefetching.
         buffer_mb       = 256,      # Read buffer size (megabytes).
-        num_threads     = 2):       # Number of concurrent threads.
+        num_threads     = 2,        # Number of concurrent threads.
+        compressed      = 0):       
 
         self.tfrecord_dir       = tfrecord_dir
         self.resolution         = None
@@ -66,6 +92,8 @@ class TFRecordDataset:
         self._cur_minibatch     = -1
         self._cur_lod           = -1
 
+
+        parse_tf_np, parse_tf = [(parse_tfrecord_np, parse_tfrecord_tf), (parse_compressed_tfrecord_np, parse_compressed_tfrecord_tf)][compressed]
         # List tfrecords files and inspect their shapes.
         assert os.path.isdir(self.tfrecord_dir)
         tfr_files = sorted(glob.glob(os.path.join(self.tfrecord_dir, '*.tfrecords')))
@@ -74,7 +102,7 @@ class TFRecordDataset:
         for tfr_file in tfr_files:
             tfr_opt = tf.python_io.TFRecordOptions(tf.python_io.TFRecordCompressionType.NONE)
             for record in tf.python_io.tf_record_iterator(tfr_file, tfr_opt):
-                tfr_shapes.append(parse_tfrecord_np(record).shape)
+                tfr_shapes.append(parse_tf_np(record).shape)
                 break
 
         # Autodetect label filename.
@@ -118,7 +146,7 @@ class TFRecordDataset:
                 if tfr_lod < 0:
                     continue
                 dset = tf.data.TFRecordDataset(tfr_file, compression_type='', buffer_size=buffer_mb<<20)
-                dset = dset.map(parse_tfrecord_tf, num_parallel_calls=num_threads)
+                dset = dset.map(parse_tf, num_parallel_calls=num_threads)
                 dset = tf.data.Dataset.zip((dset, self._tf_labels_dataset))
                 bytes_per_item = np.prod(tfr_shape) * np.dtype(self.dtype).itemsize
                 if shuffle_mb > 0:

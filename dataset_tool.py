@@ -19,6 +19,7 @@ import numpy as np
 import tensorflow as tf
 import PIL.Image
 import dnnlib.tflib as tflib
+import io
 
 from training import dataset
 
@@ -31,7 +32,7 @@ def error(msg):
 #----------------------------------------------------------------------------
 
 class TFRecordExporter:
-    def __init__(self, tfrecord_dir, expected_images, print_progress=True, progress_interval=10):
+    def __init__(self, tfrecord_dir, expected_images, print_progress=True, progress_interval=10, compressed=False):
         self.tfrecord_dir       = tfrecord_dir
         self.tfr_prefix         = os.path.join(self.tfrecord_dir, os.path.basename(self.tfrecord_dir))
         self.expected_images    = expected_images
@@ -41,6 +42,7 @@ class TFRecordExporter:
         self.tfr_writers        = []
         self.print_progress     = print_progress
         self.progress_interval  = progress_interval
+        self.compressed         = compressed
 
         if self.print_progress:
             print('Creating dataset "%s"' % tfrecord_dir)
@@ -82,9 +84,15 @@ class TFRecordExporter:
                 img = img.astype(np.float32)
                 img = (img[:, 0::2, 0::2] + img[:, 0::2, 1::2] + img[:, 1::2, 0::2] + img[:, 1::2, 1::2]) * 0.25
             quant = np.rint(img).clip(0, 255).astype(np.uint8)
+            if self.compressed:
+                with Image.fromarray(quant) as img, io.BytesIO() as img_bs:
+                    img.save(img_bs, format='jpeg', quality=90)
+                    ex_value = img_bs.get_value()
+            else:
+                ex_value = quant.tostring()
             ex = tf.train.Example(features=tf.train.Features(feature={
                 'shape': tf.train.Feature(int64_list=tf.train.Int64List(value=quant.shape)),
-                'data': tf.train.Feature(bytes_list=tf.train.BytesList(value=[quant.tostring()]))}))
+                'data': tf.train.Feature(bytes_list=tf.train.BytesList(value=[ex_value]))}))
             tfr_writer.write(ex.SerializeToString())
         self.cur_images += 1
 
@@ -537,7 +545,7 @@ def create_celeba(tfrecord_dir, celeba_dir, cx=89, cy=121):
 
 #----------------------------------------------------------------------------
 
-def create_from_images(tfrecord_dir, image_dir, shuffle):
+def create_from_images(tfrecord_dir, image_dir, shuffle, compressed):
     print('Loading images from "%s"' % image_dir)
     image_filenames = sorted(glob.glob(os.path.join(image_dir, '*')))
     if len(image_filenames) == 0:
@@ -553,7 +561,7 @@ def create_from_images(tfrecord_dir, image_dir, shuffle):
     if channels not in [1, 3]:
         error('Input images must be stored as RGB or grayscale')
 
-    with TFRecordExporter(tfrecord_dir, len(image_filenames)) as tfr:
+    with TFRecordExporter(tfrecord_dir, len(image_filenames), compressed=compressed) as tfr:
         order = tfr.choose_shuffled_order() if shuffle else np.arange(len(image_filenames))
         for idx in range(order.size):
             img = np.asarray(PIL.Image.open(image_filenames[order[idx]]))
@@ -670,6 +678,7 @@ def execute_cmdline(argv):
     p.add_argument(     'tfrecord_dir',     help='New dataset directory to be created')
     p.add_argument(     'image_dir',        help='Directory containing the images')
     p.add_argument(     '--shuffle',        help='Randomize image order (default: 1)', type=int, default=1)
+    p.add_argument(     '--compressed',        help='Saved compressed image (default: 1)', type=int, default=1)
 
     p = add_command(    'create_from_hdf5', 'Create dataset from legacy HDF5 archive.',
                                             'create_from_hdf5 datasets/celebahq ~/downloads/celeba-hq-1024x1024.h5')
