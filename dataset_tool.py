@@ -88,7 +88,7 @@ class TFRecordExporter:
                 #print(type(quant), quant.shape)
                 with PIL.Image.fromarray(np.uint8(np.transpose(quant, [1, 2, 0]))) as img, io.BytesIO() as img_bs:
                     img.save(img_bs, format='jpeg', quality=90)
-                    ex_value = img_bs.get_value()
+                    ex_value = img_bs.getvalue()
             else:
                 ex_value = quant.tostring()
             ex = tf.train.Example(features=tf.train.Features(feature={
