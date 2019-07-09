@@ -14,6 +14,7 @@ import tensorflow as tf
 import dnnlib
 import dnnlib.tflib as tflib
 import io
+from PIL import Image
 
 #----------------------------------------------------------------------------
 # Parse individual image from a tfrecords file.
