@@ -25,9 +25,10 @@ def _parse_tfrecord_tf(record, compressed):
     
     if compressed:
         #data = tf.image.decode_jpeg(features['data'], channels=3)
-        data = Image.open(io.BytesIO(features['data']))
-        data = np.asarray(data)
-        data = np.transpose(data, [2, 0, 1])
+        with io.BytesIO(features['data']) as img_bs:
+            with Image.open(img_bs) as data:
+                data = np.asarray(data)
+                data = np.transpose(data, [2, 0, 1])
     else:
         data = tf.decode_raw(features['data'], tf.uint8)
 
@@ -45,7 +46,10 @@ def _parse_tfrecord_np(record, compressed):
     shape = ex.features.feature['shape'].int64_list.value # temporary pylint workaround # pylint: disable=no-member
     data = ex.features.feature['data'].bytes_list.value[0] # temporary pylint workaround # pylint: disable=no-member
     if compressed:
-        data = tf.image.decode_jpeg(data, channels=3)
+        with io.BytesIO(data) as img_bs:
+            with Image.open(img_bs) as data:
+                data = np.asarray(data)
+                data = np.transpose(data, [2, 0, 1])
     else:
         data = np.fromstring(data, np.uint8)
 
