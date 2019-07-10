@@ -114,6 +114,16 @@ def training_schedule(
     s.tick_kimg = tick_kimg_dict.get(s.resolution, tick_kimg_base)
     return s
 
+def start_abort_thread(abort_fn, t):
+    def timeout_cb():
+        with open(abort_fn, 'w') as f:
+            pass
+    def th_cb():
+        start = time.time()
+        while time.time() - start < t:
+            time.sleep(5)
+        timeout_cb()
+
 #----------------------------------------------------------------------------
 # Main training script.
 
@@ -132,7 +142,7 @@ def training_loop(
     tf_config               = {},       # Options for tflib.init_tf().
     G_smoothing_kimg        = 10.0,     # Half-life of the running average of generator weights.
     D_repeats               = 1,        # How many times the discriminator is trained per G iteration.
-    minibatch_repeats       = 4,        # Number of minibatches to run before adjusting training parameters.
+    minibatch_repeats       = 1,        # Number of minibatches to run before adjusting training parameters.
     reset_opt_for_new_lod   = True,     # Reset optimizer internal state (e.g. Adam moments) when new layers are introduced?
     total_kimg              = 15000,    # Total length of the training, measured in thousands of real images.
     mirror_augment          = False,    # Enable mirror augment?
@@ -216,6 +226,9 @@ def training_loop(
     if save_weight_histograms:
         G.setup_weight_histograms(); D.setup_weight_histograms()
     metrics = metric_base.MetricGroup(metric_arg_list)
+
+
+    start_abort_thread(os.path.join(submit_config.run_dir, 'abort.txt'), 2*60*60)
 
     print('Training...\n')
     ctx.update('', cur_epoch=resume_kimg, max_epoch=total_kimg)
