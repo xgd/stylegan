@@ -70,7 +70,7 @@ class RunContext(object):
 
         max_epoch_val = self.max_epoch if max_epoch is None else max_epoch
 
-    def refresh_stop_flag() -> None:
+    def refresh_stop_flag(self) -> None:
         if os.path.exists(os.path.join(self.submit_config.run_dir, "abort.txt")):
             self.should_stop_flag = True
 
