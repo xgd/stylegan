@@ -1,0 +1,35 @@
+diff --git a/training/misc.py b/training/misc.py
+index 50ae51c..d906a2d 100755
+--- a/training/misc.py
++++ b/training/misc.py
+@@ -119,6 +119,14 @@ def list_network_pkls(run_id_or_run_dir, include_final=True):
+         del pkls[0]
+     return pkls
+
++def locate_latest_pkl():
++    allpickles = sorted(glob.glob(os.path.join(config.result_dir, '0*', 'network-*.pkl')))
++    latest_pickle = allpickles[-1]
++    resume_run_id = os.path.basename(os.path.dirname(latest_pickle))
++    RE_KIMG = re.compile('network-snapshot-(\d+).pkl')
++    kimg = int(RE_KIMG.match(os.path.basename(latest_pickle)).group(1))
++    return (locate_network_pkl(resume_run_id), float(kimg))
++
+ def locate_network_pkl(run_id_or_run_dir_or_network_pkl, snapshot_or_network_pkl=None):
+     for candidate in [snapshot_or_network_pkl, run_id_or_run_dir_or_network_pkl]:
+         if isinstance(candidate, str):
+diff --git a/training/training_loop.py b/training/training_loop.py
+index 78d6fe1..20966d9 100755
+--- a/training/training_loop.py
++++ b/training/training_loop.py
+@@ -148,7 +148,10 @@ def training_loop(
+     # Construct networks.
+     with tf.device('/gpu:0'):
+         if resume_run_id is not None:
+-            network_pkl = misc.locate_network_pkl(resume_run_id, resume_snapshot)
++            if resume_run_id == 'latest':
++                network_pkl, resume_kimg = misc.locate_latest_pkl()
++            else:
++                network_pkl = misc.locate_network_pkl(resume_run_id, resume_snapshot)
+             print('Loading networks from "%s"...' % network_pkl)
+             G, D, Gs = misc.load_pkl(network_pkl)
+         else:
