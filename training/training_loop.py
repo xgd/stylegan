@@ -231,8 +231,11 @@ def training_loop(
         G.setup_weight_histograms(); D.setup_weight_histograms()
     metrics = metric_base.MetricGroup(metric_arg_list)
 
-
-    start_abort_thread(os.path.join(submit_config.run_dir, 'abort.txt'), 2*60*60)
+    pkl_queue = queue.Queue()
+    start_abort_thread(os.path.join(submit_config.run_dir, 'abort.txt'), 8.9*60*60)
+    allpickles = sorted(glob.glob(os.path.join(config.result_dir, '0*', 'network-*.pkl')))
+    for pkl in allpickles:
+        truncate_save_pkl(pkl_queue, pkl)
 
     print('Training...\n')
     ctx.update('', cur_epoch=resume_kimg, max_epoch=total_kimg)
@@ -241,10 +244,13 @@ def training_loop(
     cur_tick = 0
     tick_start_nimg = cur_nimg
     prev_lod = -1.0
-    pkl_queue = queue.Queue()
+    
     while cur_nimg < total_kimg * 1000:
         ctx.refresh_stop_flag()
-        if ctx.should_stop(): break
+        if ctx.should_stop():
+            pkl = os.path.join(submit_config.run_dir, 'network-snapshot-%06d.pkl' % (cur_nimg // 1000))
+            misc.save_pkl((G, D, Gs), os.path.join(submit_config.run_dir, pkl))
+            break
 
         # Choose training parameters and configure training ops.
         sched = training_schedule(cur_nimg=cur_nimg, training_set=training_set, num_gpus=submit_config.num_gpus, **sched_args)
@@ -301,7 +307,6 @@ def training_loop(
             maintenance_time = ctx.get_last_update_interval() - tick_time
 
     # Write final results.
-    misc.save_pkl((G, D, Gs), os.path.join(submit_config.run_dir, 'network-final.pkl'))
     summary_log.close()
 
     ctx.close()
