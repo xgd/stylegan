@@ -21,6 +21,8 @@ from training import misc
 from metrics import metric_base
 
 import queue
+import time
+import threading
 
 def truncate_save_pkl(queue, pkl, max_qsize=5):
     while queue.qsize() >= max_qsize:
@@ -123,6 +125,8 @@ def start_abort_thread(abort_fn, t):
         while time.time() - start < t:
             time.sleep(5)
         timeout_cb()
+    t1 = threading.Thread(target=th_cb)
+    t1.start()
 
 #----------------------------------------------------------------------------
 # Main training script.
