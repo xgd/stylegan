@@ -243,6 +243,7 @@ def training_loop(
     prev_lod = -1.0
     pkl_queue = queue.Queue()
     while cur_nimg < total_kimg * 1000:
+        ctx.refresh_stop_flag()
         if ctx.should_stop(): break
 
         # Choose training parameters and configure training ops.

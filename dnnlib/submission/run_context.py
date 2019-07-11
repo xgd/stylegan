@@ -66,10 +66,13 @@ class RunContext(object):
         self.last_update_interval = time.time() - self.last_update_time
         self.last_update_time = time.time()
 
-        if os.path.exists(os.path.join(self.submit_config.run_dir, "abort.txt")):
-            self.should_stop_flag = True
+        self.refresh_stop_flag()
 
         max_epoch_val = self.max_epoch if max_epoch is None else max_epoch
+
+    def refresh_stop_flag() -> None:
+        if os.path.exists(os.path.join(self.submit_config.run_dir, "abort.txt")):
+            self.should_stop_flag = True
 
     def should_stop(self) -> bool:
         """Tell whether a stopping condition has been triggered one way or another."""
