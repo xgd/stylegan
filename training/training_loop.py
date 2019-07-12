@@ -250,7 +250,7 @@ def training_loop(
         ctx.refresh_stop_flag()
         if ctx.should_stop():
             pkl = os.path.join(submit_config.run_dir, 'network-snapshot-%06d.pkl' % (cur_nimg // 1000))
-            misc.save_pkl((G, D, Gs), os.path.join(submit_config.run_dir, pkl))
+            misc.save_pkl((G, D, Gs), pkl)
             break
 
         # Choose training parameters and configure training ops.
