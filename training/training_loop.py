@@ -236,7 +236,7 @@ def training_loop(
     start_abort_thread(os.path.join(submit_config.run_dir, 'abort.txt'), 8*60*60)
     allpickles = sorted(glob.glob(os.path.join(config.result_dir, '0*', 'network-*.pkl')))
     for pkl in allpickles:
-        truncate_save_pkl(pkl_queue, pkl)
+        truncate_save_pkl(pkl_queue, pkl, 2)
 
     print('Training...\n')
     ctx.update('', cur_epoch=resume_kimg, max_epoch=total_kimg)
