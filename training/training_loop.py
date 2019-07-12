@@ -233,7 +233,7 @@ def training_loop(
     metrics = metric_base.MetricGroup(metric_arg_list)
 
     pkl_queue = queue.Queue()
-    start_abort_thread(os.path.join(submit_config.run_dir, 'abort.txt'), 8*60*60)
+    start_abort_thread(os.path.join(submit_config.run_dir, 'abort.txt'), 0.1*60*60)
     allpickles = sorted(glob.glob(os.path.join(config.result_dir, '0*', 'network-*.pkl')))
     for pkl in allpickles:
         truncate_save_pkl(pkl_queue, pkl)

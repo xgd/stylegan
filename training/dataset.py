@@ -26,6 +26,7 @@ def _parse_tfrecord_tf(record, compressed):
     
     if compressed:
         data = tf.image.decode_jpeg(features['data'], channels=3)
+        data = tf.image.convert_image_dtype(data, dtype=tf.uint8)
         #print(tf.shape(data))
         # with io.BytesIO(features['data']) as img_bs:
         #     with Image.open(img_bs) as data:
