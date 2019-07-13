@@ -297,7 +297,7 @@ def training_loop(
                 misc.save_image_grid(grid_fakes, os.path.join(submit_config.run_dir, 'fakes%06d.png' % (cur_nimg // 1000)), drange=drange_net, grid_size=grid_size)
             if cur_tick % network_snapshot_ticks == 0 or done or cur_tick == 1:
                 pkl = os.path.join(submit_config.run_dir, 'network-snapshot-%06d.pkl' % (cur_nimg // 1000))
-                truncate_save_pkl(pkl_queue, pkl)
+                truncate_save_pkl(pkl_queue, pkl, 2)
                 misc.save_pkl((G, D, Gs), pkl)
                 metrics.run(pkl, run_dir=submit_config.run_dir, num_gpus=submit_config.num_gpus, tf_config=tf_config)
 
