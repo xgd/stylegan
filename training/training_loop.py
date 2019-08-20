@@ -161,6 +161,11 @@ def training_loop(
     resume_kimg             = 7000,      # Assumed training progress at the beginning. Affects reporting and training schedule.
     resume_time             = 0.0):     # Assumed wallclock time at the beginning. Affects reporting.
 
+    
+    if resume_run_id == 'latest':
+        resume_run_id, resume_kimg = misc.locate_latest_run_id()
+
+    tf_config['rnd.np_random_seed'] = int(resume_kimg)
     # Initialize dnnlib and TensorFlow.
     ctx = dnnlib.RunContext(submit_config, train)
     tflib.init_tf(tf_config)
@@ -171,10 +176,7 @@ def training_loop(
     # Construct networks.
     with tf.device('/gpu:0'):
         if resume_run_id is not None:
-            if resume_run_id == 'latest':
-                network_pkl, resume_kimg = misc.locate_latest_pkl()
-            else:
-                network_pkl = misc.locate_network_pkl(resume_run_id, resume_snapshot)
+            network_pkl = misc.locate_network_pkl(resume_run_id, resume_snapshot)
             print('Loading networks from "%s"...' % network_pkl)
             G, D, Gs = misc.load_pkl(network_pkl)
         else:
