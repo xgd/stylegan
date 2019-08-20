@@ -219,12 +219,6 @@ def training_loop(
         except tf.errors.NotFoundError:
             peak_gpu_mem_op = tf.constant(0)
 
-    with tf.device('/cpu:0'):
-        try:
-            peak_cpu_mem_op = tf.contrib.memory_stats.MaxBytesInUse()
-        except tf.errors.NotFoundError:
-            peak_cpu_mem_op = tf.constant(0)
-
     print('Setting up snapshot image grid...')
     grid_size, grid_reals, grid_labels, grid_latents = misc.setup_snapshot_image_grid(G, training_set, **grid_args)
     sched = training_schedule(cur_nimg=total_kimg*1000, training_set=training_set, num_gpus=submit_config.num_gpus, **sched_args)
