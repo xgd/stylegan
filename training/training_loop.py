@@ -165,7 +165,7 @@ def training_loop(
     if resume_run_id == 'latest':
         resume_run_id, resume_kimg = misc.locate_latest_run_id()
 
-    tf_config['rnd.np_random_seed'] = int(resume_kimg)
+    # tf_config['rnd.np_random_seed'] = int(resume_kimg)
     # Initialize dnnlib and TensorFlow.
     ctx = dnnlib.RunContext(submit_config, train)
     tflib.init_tf(tf_config)
